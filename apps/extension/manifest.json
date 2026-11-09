@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "创迹 CreatorTrace · TraceLab",
+  "version": "1.0.0",
+  "description": "从 Bilibili 创作者主页出发，研究内容主题、作品表现与创作轨迹。",
+  "minimum_chrome_version": "109",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "action": { "default_title": "用创迹研究这个创作者", "default_popup": "popup.html" },
+  "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'self'" }
+}

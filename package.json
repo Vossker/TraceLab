@@ -1,0 +1,47 @@
+{
+  "name": "tracelab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "description": "TraceLab — 有证据的创作者成长研究",
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB -c cyan,green \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:web": "vite --host 127.0.0.1",
+    "dev:server": "tsx watch --env-file-if-exists=.env apps/api/index.ts",
+    "build": "tsc --noEmit && vite build && node scripts/build-extension.mjs",
+    "start": "tsx --env-file-if-exists=.env apps/api/index.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "check": "tsc --noEmit",
+    "lint": "eslint apps packages tests scripts",
+    "verify": "npm run lint && npm test && npm run build",
+    "probe:bilibili": "node scripts/probe-bilibili.mjs",
+    "setup:live": "node scripts/setup-live.mjs",
+    "gateway": "tsx --env-file-if-exists=.env apps/gateway/index.ts"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@types/chrome": "^0.0.300",
+    "@eslint/js": "^9.19.0",
+    "eslint": "^9.19.0",
+    "typescript-eslint": "^8.22.0",
+    "globals": "^15.14.0",
+    "esbuild": "^0.25.0",
+    "concurrently": "^9.1.2",
+    "tsx": "^4.19.2",
+    "typescript": "~5.7.3",
+    "vite": "^6.1.0"
+  },
+  "engines": { "node": ">=22.13.0" }
+}
