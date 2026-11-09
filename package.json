@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "workspaces": ["apps/*", "packages/*"],
-  "description": "TraceLab — 有证据的创作者成长研究",
+  "description": "TraceLab — B 站创作者研究工具",
   "scripts": {
     "dev": "concurrently -k -n API,WEB -c cyan,green \"npm:dev:server\" \"npm:dev:web\"",
     "dev:web": "vite --host 127.0.0.1",

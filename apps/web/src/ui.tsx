@@ -15,14 +15,13 @@ export function Modal({ title, subtitle, children, onClose, wide = false }: { ti
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => { const d = ref.current; d?.showModal(); return () => { d?.close(); }; }, []);
   return <dialog ref={ref} className={`modal ${wide ? 'modal-wide' : ''}`} aria-label={title} onCancel={onClose} onClick={e => { if (e.target === e.currentTarget) { const rect = e.currentTarget.getBoundingClientRect(); if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) onClose(); } }}>
-    <header className="modal-heading"><div><span className="eyebrow">CREATORTRACE / RESEARCH</span><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div><button className="icon-button" onClick={onClose} aria-label="关闭对话框"><X size={20}/></button></header>{children}
+    <header className="modal-heading"><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div><button className="icon-button" onClick={onClose} aria-label="关闭对话框"><X size={20}/></button></header>{children}
   </dialog>;
 }
 export function Cover({ video, color = colors[0], large = false }: { video: Video; color?: string; large?: boolean }) {
   return <div className={`video-cover ${large ? 'video-cover-large' : ''}`} style={{ '--cover-color': color } as React.CSSProperties}>
     {video.cover ? <img src={video.cover} alt={video.title} referrerPolicy="no-referrer" loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} /> : null}
     <div className="cover-grid"/><span className="cover-tag">{video.topic || '内容研究'}</span><div className="cover-orbit"><span/><span/><span/></div>
-    <div className="cover-type">{video.source.includes('演示') ? 'LIFE AS AN' : 'A CREATOR’S'}<br/><strong>{video.source.includes('演示') ? 'EXPERIMENT.' : 'PERSPECTIVE.'}</strong></div>
     <span className="cover-play"><Play size={15} fill="currentColor"/></span><span className="cover-duration">{video.duration === null ? '时长未知' : `${Math.floor(video.duration / 60)}:${String(Math.floor(video.duration % 60)).padStart(2, '0')}`}</span>
   </div>;
 }

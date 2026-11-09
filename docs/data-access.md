@@ -1,6 +1,6 @@
 # 数据访问验证与授权 Adapter
 
-## 本次验证
+## 接口验证记录
 
 2026-11-09 16:04（北京时间），使用 `npm run probe:bilibili` 对以下地址各执行一次匿名只读请求。不读取 Cookie，不登录，不签署 WBI，不重试或绕过访问限制。
 
@@ -72,10 +72,10 @@ videos 实际必须至少 1 条并满足 `packages/core/src/model.ts`。列表�
 
 ## LLM
 
-服务端使用兼容 [OpenAI Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create) 的结构化 `json_schema` 输出；参考 [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)。模型由你通过 `AI_MODEL` 指定，不预设可用型号、价格或凭证。真实 LLM 未在本次交付中联网调用；两步处理、错误恢复与引用校验使用模拟服务自动化测试。
+服务端使用兼容 [OpenAI Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create) 的结构化 `json_schema` 输出；参考 [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)。模型通过 `AI_MODEL` 指定，不预设可用型号、价格或凭证。两步处理、错误恢复与引用校验由自动化测试覆盖（使用模拟服务）；2026-11-09 另用 `kimi-k3.1-pro` 跑通过真实流程。
 
 ## 后续探测与实现（2026-11-09）
 
 16:56:42 北京时间，对公开列表 `https://api.bilibili.com/x/series/recArchivesByKeywords?mid=163637592&keywords=&pn=1&ps=3` 的匿名请求返回 **HTTP 412 / code -412 / request was banned**。已停止这条路径，没有使用 Cookie、代理、逆向签名或换端点规避限制。探测脚本 `scripts/probe-live-source.mjs` 仅留作只读诊断记录，不是运行时依赖；没有必要继续探测受限路径。
 
-用户确认暂时没有开放平台应用，先交付可配置的官方授权网关。实际代码、配置与验证清单见 [live-gateway.md](live-gateway.md)。本机 HTTP 集成测试的上游响应均为明确的协议测试夹具，不当作真实 B 站采集证据。
+目前没有开放平台应用，因此先实现了可配置的官方授权网关。实际代码、配置与验证清单见 [live-gateway.md](live-gateway.md)。本机 HTTP 集成测试的上游响应均为明确的协议测试夹具，不当作真实 B 站采集证据。

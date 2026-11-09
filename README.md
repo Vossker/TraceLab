@@ -2,7 +2,7 @@
 
 一个 Bilibili 创作者研究工具，由本地 Dashboard 和 Chrome 插件组成。它通过作品、主题、当前累计表现和采样评论，回答一个问题：**一个创作者如何一步步形成自己的内容方向？**
 
-![创迹交互式成长时间线](docs/screenshots/desktop-timeline.jpg)
+![创迹作品时间线](docs/screenshots/desktop-timeline.jpg)
 
 ## 快速开始
 
