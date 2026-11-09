@@ -25,7 +25,7 @@ export default function App() {
   const [selected, setSelected] = useState<AnalyzedVideo | null>(null); const [pins, setPins] = useState<string[]>([]);
   const [active, setActive] = useState('overview'); const [mobileNav, setMobileNav] = useState(false);
   const [theme, setTheme] = useState(readStorage('tracelab-theme') || 'dark');
-  const [busy, setBusy] = useState(false); const [aiBusy, setAiBusy] = useState(false); const [progress, setProgress] = useState({ value: 0, message: '' });
+  const [busy, setBusy] = useState(false); const [aiBusy, setAiBusy] = useState(false); const [aiProgress, setAiProgress] = useState(''); const [progress, setProgress] = useState({ value: 0, message: '' });
   const [file, setFile] = useState<File | null>(null); const [creatorName, setCreatorName] = useState('');
   const [history, setHistory] = useState<HistoryRow[]>([]); const [historyLoading, setHistoryLoading] = useState(false); const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => { document.documentElement.dataset.theme = theme; writeStorage('tracelab-theme', theme); }, [theme]);
@@ -84,9 +84,18 @@ export default function App() {
   const runAI = async () => {
     if (!report) return;
     if (!health.ai) { setError('尚未配置 LLM。请将 .env.example 复制为 .env，填写服务端 AI_API_KEY、AI_MODEL，然后重启 API。当前基础报告已包含完整统计与证据。'); setModal('method'); return; }
-    setAiBusy(true); setError('');
-    try { showReport(await api<Report>(`/api/reports/${report.id}/ai`, { method: 'POST' })); setNotice('AI 报告已生成，结构与引用通过校验'); }
-    catch (e) { setError((e as Error).message); setModal('method'); } finally { setAiBusy(false); }
+    setAiBusy(true); setAiProgress('准备 AI 分析'); setError('');
+    try {
+      const job = await api<{ id: string }>(`/api/reports/${report.id}/ai`, { method: 'POST' });
+      for (let attempts = 0; attempts < 2400; attempts++) {
+        const result = await api<{ status: string; message: string; reportId?: string }>(`/api/jobs/${job.id}`);
+        setAiProgress(result.message);
+        if (result.status === 'error') throw new Error(result.message);
+        if (result.status === 'complete') { showReport(await api<Report>(`/api/reports/${result.reportId}`)); setNotice('AI 报告已生成，结构与引用通过校验'); return; }
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      throw new Error('AI 分析等待超时。结果完成后会自动保存，请稍后刷新页面查看。');
+    } catch (e) { setError((e as Error).message); setModal('method'); } finally { setAiBusy(false); setAiProgress(''); }
   };
   const loadHistory = async () => { openModal('history'); setHistoryLoading(true); try { setHistory(await api<HistoryRow[]>('/api/history')); } catch (e) { setError((e as Error).message); } finally { setHistoryLoading(false); } };
   const exportReport = (format: 'md' | 'json') => { if (!report) return; download(`CreatorTrace-${report.dataset.creator.name.replace(/[<>:"/\\|?*]/g, '_')}.${format}`, format === 'md' ? markdownReport(report) : JSON.stringify(report, null, 2), format === 'md' ? 'text/markdown;charset=utf-8' : 'application/json'); setNotice('报告已导出'); };
@@ -103,7 +112,7 @@ export default function App() {
       <div className="research-insight"><span className="insight-icon"><Sparkles size={19}/></span><div><span className="eyebrow">第一条线索</span><p>{a!.insights[0].title}，<strong>{a!.topics[0].count} 条作品</strong>反复探索这一方向。</p></div><a href="#report">走进成长故事<ArrowRight size={16}/></a></div>
       <Timeline key={report.id} analysis={a!} onSelect={setSelected} pins={pins} onTogglePin={togglePin}/>
       <div className="insight-strip">{a!.insights.map((insight, i) => <button key={insight.title} onClick={() => setSelected(a!.videos.find(v => v.id === insight.evidenceIds[0])!)}><span className="insight-number">0{i + 1}</span><div><span className={`kind-badge ${insight.kind}`}>{kindLabel[insight.kind]}</span><h3>{insight.title}</h3><p>{insight.text}</p></div><ArrowUpRight size={16}/></button>)}</div>
-      <Topics key={`topics-${report.id}-${report.aiModel}`} analysis={a!} onSelect={setSelected}/><Highlights report={report} onSelect={setSelected}/><Feedback report={report} onSelect={setSelected}/><GrowthReport report={report} onSelect={setSelected} onAI={runAI} aiBusy={aiBusy} aiAvailable={health.ai} onExport={() => openModal('export')}/>
+      <Topics key={`topics-${report.id}-${report.aiModel}`} analysis={a!} onSelect={setSelected}/><Highlights report={report} onSelect={setSelected}/><Feedback report={report} onSelect={setSelected}/><GrowthReport report={report} onSelect={setSelected} onAI={runAI} aiBusy={aiBusy} aiProgress={aiProgress} aiAvailable={health.ai} onExport={() => openModal('export')}/>
       <footer className="page-footer"><Logo small/><span>每一个数据点，都是一次创作的痕迹。</span><button onClick={() => openModal('method')}>数据采集于 {shortDate(d!.collectedAt)}<ArrowUpRight size={13}/></button></footer>
       </>}
     </main></div>

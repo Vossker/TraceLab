@@ -132,11 +132,14 @@ CSV 可选列：`description,tags,views,likes,coins,favorites,comments,shares,du
 | `PORT`、`HOST` | API 端口和监听地址，默认 `3001`、`127.0.0.1` |
 | `PUBLIC_DATA_ENABLED` | 设为 `false` 时关闭公开接口 |
 | `AI_API_KEY`、`AI_MODEL`、`AI_BASE_URL` | LLM 配置 |
+| `AI_TIMEOUT_MS` | 单次模型请求的总时限，默认 `900000`（15 分钟） |
 | `LIVE_*`、`BILIBILI_*` | 授权网关配置，建议用 `npm run setup:live` 生成 |
 
 ### AI 深度解读
 
-模型需要兼容 OpenAI Chat Completions，并支持 `response_format: json_schema`。配置后，在报告中点击“生成 AI 深度解读”才会调用。
+模型需要兼容 OpenAI Chat Completions，并支持流式输出和 `response_format: json_schema`。配置后，在报告中点击“生成 AI 深度解读”才会调用。
+
+分析在后台运行，页面会显示进度。带思考过程的模型可能较慢，比如 `kimi-k3.1-pro` 分类 28 条作品实测约 4 分钟。
 
 调用时，作品标题、简介、标签、统计和采样评论会发送到你配置的服务。
 

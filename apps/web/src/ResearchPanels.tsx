@@ -26,12 +26,13 @@ export function Feedback({ report, onSelect }: { report: Report; onSelect: (v: A
   </section>;
 }
 
-export function GrowthReport({ report, onSelect, onAI, aiBusy, aiAvailable, onExport }: { report: Report; onSelect: (v: AnalyzedVideo) => void; onAI: () => void; aiBusy: boolean; aiAvailable: boolean; onExport: () => void }) {
+export function GrowthReport({ report, onSelect, onAI, aiBusy, aiProgress, aiAvailable, onExport }: { report: Report; onSelect: (v: AnalyzedVideo) => void; onAI: () => void; aiBusy: boolean; aiProgress: string; aiAvailable: boolean; onExport: () => void }) {
   const sections = report.ai?.sections ?? reportSections(report);
   const [open, setOpen] = useState<number[]>([0, 1, 2, 3, 4]);
   return <section className="panel growth-report" id="report"><div className="report-header"><div><span className="eyebrow"><span className="section-index">05</span> THE STORY BEHIND THE DATA</span><h2>从线索，到一个有依据的故事。</h2><p>{report.ai?.headline ?? '每一个结论，都应该能回到一条作品。'}</p></div><div className="report-symbol"><BookOpen size={30} strokeWidth={1.3}/></div></div>
     <div className="report-mode"><span><i className={report.ai ? 'status-dot' : 'status-dot neutral'}/>{report.ai ? `AI 解读 · ${report.aiModel}` : '基础研究报告 · 确定性统计 + 规则生成'}</span><button onClick={onAI} disabled={aiBusy} className="small-button"><Sparkles size={14}/>{aiBusy ? '正在分析…' : report.ai ? '重新生成 AI 解读' : '生成 AI 深度解读'}</button></div>
-    {!report.ai && <p className="ai-availability">{aiAvailable ? '模型已配置。点击后将把标题、描述、统计与采样评论发送至所配置的 LLM 服务。' : '未配置大模型时，完整基础报告仍可使用；AI 解读需要服务端 API Key。'}</p>}
+    {aiBusy && aiProgress && <p className="ai-availability" role="status">{aiProgress}</p>}
+    {!report.ai && !aiBusy && <p className="ai-availability">{aiAvailable ? '模型已配置。点击后将把标题、描述、统计与采样评论发送至所配置的 LLM 服务。' : '未配置大模型时，完整基础报告仍可使用；AI 解读需要服务端 API Key。'}</p>}
     <div className="report-sections">{sections.map((section, i) => <article key={section.title}><button className="report-section-toggle" onClick={() => setOpen(open.includes(i) ? open.filter(x => x !== i) : [...open, i])} aria-expanded={open.includes(i)}><span className="report-number">0{i + 1}</span><h3>{section.title}</h3><span className={`kind-badge ${section.kind}`}>{kindLabel[section.kind]}</span><ChevronDown size={17} className={open.includes(i) ? 'rotated' : ''}/></button><div hidden={!open.includes(i)} className="report-section-content"><p>{section.text}</p><div className="evidence-list"><span>作品证据</span>{section.evidenceIds.slice(0, 6).map(id => { const video = report.analysis.videos.find(v => v.id === id); return video && <button key={id} title={video.title} onClick={() => onSelect(video)}>{id}<ArrowUpRight size={11}/></button>; })}</div></div></article>)}</div>
     <div className="report-limitations"><Info size={17}/><div><strong>知道什么，也说明不知道什么</strong><p>单次快照无法还原历史流量；选题变化与表现变化可能相关，但不是因果结论。{report.ai ? 'AI 内容已通过结构与引用校验，语义仍需人工复核。' : '尚未调用 LLM，不把规则文本标为 AI 生成。'}</p>{report.ai?.uncertainties.map((u, i) => <p key={i}>{u}</p>)}</div></div>
     <div className="report-footer"><span><Check size={14}/>每个结论关联原始作品样本</span><button className="text-link" onClick={onExport}><Download size={15}/>带走这份研究</button></div>

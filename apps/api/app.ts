@@ -10,11 +10,11 @@ import { importDataset, csvTemplate } from '../../packages/core/src/import';
 import { parseCreatorUrl, type Dataset, type Report } from '../../packages/core/src/model';
 import { ReportStore } from './store';
 import { collectLive } from './providers';
-import { enhanceReport } from './ai';
+import { enhanceReport, requireAIConfig } from './ai';
 import { liveConfigured, liveStatus, gatewayRequest } from './live';
 import { PublicBilibiliProvider } from './public-bilibili';
 
-type Job = { id: string; status: 'running' | 'complete' | 'error'; progress: number; message: string; reportId?: string; updatedAt: number };
+type Job = { id: string; status: 'running' | 'complete' | 'error'; progress: number; message: string; reportId?: string; updatedAt: number; ai?: boolean };
 export function createApp(store = new ReportStore(), publicProvider = new PublicBilibiliProvider()) {
   const app = express(); const jobs = new Map<string, Job>(); const aiLocks = new Set<string>();
   app.disable('x-powered-by');
@@ -82,7 +82,7 @@ export function createApp(store = new ReportStore(), publicProvider = new Public
     if (usePublic && !publicProvider.status().enabled) return res.status(503).json({ error: '管理员已关闭网站公开接口读取', creator });
     if (!usePublic && !liveConfigured()) return res.status(503).json({ error: 'Live Mode 未配置数据网关。请运行 npm run setup:live 并重启服务，或使用演示 / 导入。', creator });
     for (const [key, job] of jobs) if (Date.now() - job.updatedAt > 3_600_000) jobs.delete(key);
-    if ([...jobs.values()].filter(j => j.status === 'running').length >= 2) return res.status(429).json({ error: '已有两个采集任务进行中，请稍后重试' });
+    if ([...jobs.values()].filter(j => j.status === 'running' && !j.ai).length >= 2) return res.status(429).json({ error: '已有两个采集任务进行中，请稍后重试' });
     const job: Job = { id: randomUUID(), status: 'running', progress: 0, message: '准备分析', updatedAt: Date.now() }; jobs.set(job.id, job);
     res.status(202).json(job);
     void (async () => {
@@ -96,17 +96,27 @@ export function createApp(store = new ReportStore(), publicProvider = new Public
     })();
   });
   app.get('/api/jobs/:id', (req, res) => { const job = jobs.get(req.params.id); if (!job) return res.status(404).json({ error: '任务不存在，服务可能已重启' }); res.json(job); });
-  app.post('/api/reports/:id/ai', async (req, res) => {
-    const report = req.params.id === 'demo' ? demo : store.get(req.params.id);
+  app.post('/api/reports/:id/ai', (req, res) => {
+    const reportId = req.params.id;
+    const report = reportId === 'demo' ? demo : store.get(reportId);
     if (!report) return res.status(404).json({ error: '报告不存在' });
-    if (aiLocks.has(req.params.id)) return res.status(409).json({ error: '该报告正在分析，请等待完成' });
+    requireAIConfig();
+    if (aiLocks.has(reportId)) return res.status(409).json({ error: '该报告正在分析，请等待完成' });
     if (aiLocks.size >= 2) return res.status(429).json({ error: 'AI 分析繁忙，请稍后重试' });
-    aiLocks.add(req.params.id);
-    try {
-      const enhanced = await enhanceReport(report);
-      if (enhanced.id === 'demo') { enhanced.id = randomUUID(); enhanced.createdAt = new Date().toISOString(); }
-      store.save(enhanced); res.json(enhanced);
-    } finally { aiLocks.delete(req.params.id); }
+    aiLocks.add(reportId);
+    const job: Job = { id: randomUUID(), status: 'running', progress: 0, message: '准备 AI 分析', updatedAt: Date.now(), ai: true }; jobs.set(job.id, job);
+    res.status(202).json(job);
+    void (async () => {
+      try {
+        const enhanced = await enhanceReport(report, (progress, message) => { Object.assign(job, { progress, message, updatedAt: Date.now() }); });
+        if (enhanced.id === 'demo') { enhanced.id = randomUUID(); enhanced.createdAt = new Date().toISOString(); }
+        store.save(enhanced);
+        Object.assign(job, { status: 'complete', progress: 100, message: 'AI 解读已生成', reportId: enhanced.id, updatedAt: Date.now() });
+      } catch (e) {
+        const message = e instanceof ZodError ? `LLM 输出未通过校验，已保留基础报告：${e.issues[0]?.path.join('.')} ${e.issues[0]?.message}` : e instanceof SyntaxError ? 'LLM 输出不是有效的 JSON，已保留基础报告' : e instanceof Error ? e.message : 'AI 分析失败，已保留基础报告';
+        Object.assign(job, { status: 'error', message, updatedAt: Date.now() });
+      } finally { aiLocks.delete(reportId); }
+    })();
   });
   app.use('/api', (_req, res) => res.status(404).json({ error: 'API 不存在' }));
   const web = resolve('dist/web');

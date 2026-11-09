@@ -97,7 +97,7 @@ docs/                    架构、数据访问、方法和演示说明
 | POST | `/api/research` | `{url: string}` 或官方 `{account: "self"}`；未配置返回 503，已配置时创建采集任务 |
 | GET | `/api/jobs/:id` | 真实任务状态与进度 |
 | GET | `/api/reports/:id` | 读取持久化报告；`demo` 为默认案例 |
-| POST | `/api/reports/:id/ai` | 显式触发两步 LLM；失败保留原报告 |
+| POST | `/api/reports/:id/ai` | 显式触发两步 LLM，返回 202 和任务 ID，通过 `/api/jobs/:id` 查询进度；失败保留原报告 |
 | GET | `/api/history` | 最近 30 份本机研究 |
 | GET | `/api/template.csv` | CSV 模板下载 |
 | GET | `/api/template.json` | 完整模拟 JSON 数据集下载 |
